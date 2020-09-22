@@ -70,6 +70,8 @@ const plotRadar = function (title, blips, currentRadarName, alternativeRadars) {
 }
 
 const GoogleSheet = function (sheetReference, sheetName) {
+  console.log('sheetReference', sheetReference)
+
   var self = {}
 
   self.build = function () {
@@ -201,17 +203,25 @@ const GoogleSheetInput = function () {
   var self = {}
   var sheet
 
-  self.build = function () {
+  self.build = function (urlGoogleSheetInput) {
     var domainName = DomainName(window.location.search.substring(1))
     var queryString = window.location.href.match(/sheetId(.*)/)
     var queryParams = queryString ? QueryParams(queryString[0]) : {}
+
+    var defaultParam = window.location.href.match(/default(.*)/)
+    if (urlGoogleSheetInput && !defaultParam) {
+      domainName = DomainName('?sheetId=' + encodeURIComponent(urlGoogleSheetInput));
+      queryParams = { sheetId: urlGoogleSheetInput };
+    }
+    console.log('domainName', domainName)
+    console.log('queryParams', JSON.stringify(queryParams))
 
     if (domainName && queryParams.sheetId.endsWith('csv')) {
       sheet = CSVDocument(queryParams.sheetId)
       sheet.init().build()
     } else if (domainName && domainName.endsWith('google.com') && queryParams.sheetId) {
       sheet = GoogleSheet(queryParams.sheetId, queryParams.sheetName)
-      console.log(queryParams.sheetName)
+      console.log('queryParams.sheetName', queryParams.sheetName)
 
       sheet.init().build()
     } else {
@@ -227,7 +237,7 @@ const GoogleSheetInput = function () {
 
       plotBanner(content, bannerText)
 
-      plotForm(content)
+      plotForm(content, defaultParam)
 
       plotFooter(content)
     }
@@ -259,7 +269,7 @@ function plotLoading (content) {
 function plotLogo (content) {
   content.append('div')
     .attr('class', 'input-sheet__logo')
-    .html('<a href="https://www.thoughtworks.com"><img src="/images/tw-logo.png" / ></a>')
+    .html('<a href="https://www.thoughtworks.com"><img src="/images/logo-tech-belcorp.png" /></a>')
 }
 
 function plotFooter (content) {
@@ -270,8 +280,8 @@ function plotFooter (content) {
     .attr('class', 'footer-content')
     .append('p')
     .html('Powered by <a href="https://www.thoughtworks.com"> ThoughtWorks</a>. ' +
-      'By using this service you agree to <a href="https://www.thoughtworks.com/radar/tos">ThoughtWorks\' terms of use</a>. ' +
-      'You also agree to our <a href="https://www.thoughtworks.com/privacy-policy">privacy policy</a>, which describes how we will gather, use and protect any personal data contained in your public Google Sheet. ' +
+      // 'By using this service you agree to <a href="https://www.thoughtworks.com/radar/tos">ThoughtWorks\' terms of use</a>. ' +
+      // 'You also agree to our <a href="https://www.thoughtworks.com/privacy-policy">privacy policy</a>, which describes how we will gather, use and protect any personal data contained in your public Google Sheet. ' +
       'This software is <a href="https://github.com/thoughtworks/build-your-own-radar">open source</a> and available for download and self-hosting.')
 }
 
@@ -281,7 +291,7 @@ function plotBanner (content, text) {
     .html(text)
 }
 
-function plotForm (content) {
+function plotForm (content, defaultParam) {
   content.append('div')
     .attr('class', 'input-sheet__form')
     .append('p')
@@ -295,6 +305,11 @@ function plotForm (content) {
     .attr('name', 'sheetId')
     .attr('placeholder', 'e.g. https://docs.google.com/spreadsheets/d/<sheetid> or hosted CSV file')
     .attr('required', '')
+
+  if(defaultParam)
+    form.append('input')
+      .attr('type', 'hidden')
+      .attr('name', 'default')
 
   form.append('button')
     .attr('type', 'submit')
